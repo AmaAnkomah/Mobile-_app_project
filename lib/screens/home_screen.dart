@@ -6,6 +6,7 @@ import '../models/course.dart';
 import '../services/api_service.dart';
 import 'course_detail_screen.dart';
 import 'add_course_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -25,13 +26,38 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _completedCourses = [];
   final ApiService _api = ApiService();
 
+  int _currentIndex = 0;
+  List<Course> _enrolledCourses = [];
+  bool _isEnrolledLoading = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<CourseProvider>(context, listen: false).fetchCourses();
-      _loadProgress();
+      _refreshData();
     });
+  }
+
+  Future<void> _refreshData() async {
+    await _loadProgress();
+    if (_currentIndex == 1) {
+      await _loadEnrolledCourses();
+    }
+  }
+
+  Future<void> _loadEnrolledCourses() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (auth.userId == null) return;
+
+    setState(() => _isEnrolledLoading = true);
+    final enrolled = await _api.fetchEnrolledCourses(auth.userId!);
+    if (mounted) {
+      setState(() {
+        _enrolledCourses = enrolled;
+        _isEnrolledLoading = false;
+      });
+    }
   }
 
   Future<void> _loadProgress() async {
@@ -63,56 +89,133 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: _currentIndex == 0 ? FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => AddCourseScreen()),
-          );
+          ).then((_) => coursesProvider.fetchCourses());
         },
-        child: Icon(Icons.add),
-      ),
+        tooltip: 'Add New Course',
+        child: const Icon(Icons.add),
+      ) : null,
       appBar: AppBar(
-        title: Text('Explore Courses'),
+        title: Text(_currentIndex == 0 ? 'Explore Courses' : 'My Learning'),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: () async {
-              await coursesProvider.seedData();
-              _loadProgress();
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => _refreshData(),
+          ),
+
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ProfileScreen()),
+              );
             },
           ),
-          IconButton(icon: Icon(Icons.person_outline), onPressed: () {}),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await coursesProvider.fetchCourses();
-          await _loadProgress();
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _buildExploreView(coursesProvider, filteredCourses),
+          _buildMyCoursesView(),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+          if (index == 1) {
+            _loadEnrolledCourses();
+          }
         },
-        child: CustomScrollView(
-          slivers: [
-            if (_completedCourses.isNotEmpty)
-              SliverToBoxAdapter(child: _buildProgressDashboard()),
-            SliverToBoxAdapter(child: _buildCategoryList()),
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              sliver: coursesProvider.isLoading
-                  ? SliverToBoxAdapter(
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  : filteredCourses.isEmpty
-                  ? SliverToBoxAdapter(child: _buildEmptyState())
-                  : SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) =>
-                            _buildCourseCard(filteredCourses[index]),
-                        childCount: filteredCourses.length,
-                      ),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.explore_outlined),
+            activeIcon: Icon(Icons.explore),
+            label: 'Explore',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.school_outlined),
+            activeIcon: Icon(Icons.school),
+            label: 'My Courses',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExploreView(CourseProvider coursesProvider, List<Course> filteredCourses) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        await coursesProvider.fetchCourses();
+        await _loadProgress();
+      },
+      child: CustomScrollView(
+        slivers: [
+          if (_completedCourses.isNotEmpty)
+            SliverToBoxAdapter(child: _buildProgressDashboard()),
+          SliverToBoxAdapter(child: _buildCategoryList()),
+          SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            sliver: coursesProvider.isLoading
+                ? SliverToBoxAdapter(
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : filteredCourses.isEmpty
+                ? SliverToBoxAdapter(child: _buildEmptyState())
+                : SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) =>
+                          _buildCourseCard(filteredCourses[index]),
+                      childCount: filteredCourses.length,
                     ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMyCoursesView() {
+    if (_isEnrolledLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_enrolledCourses.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.school_outlined, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            const Text(
+              'No enrolled courses yet',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => setState(() => _currentIndex = 0),
+              child: const Text('Explore Courses'),
             ),
           ],
         ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadEnrolledCourses,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _enrolledCourses.length,
+        itemBuilder: (context, index) => _buildCourseCard(_enrolledCourses[index]),
       ),
     );
   }
@@ -298,27 +401,34 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Row(
                         children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              course.category,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  course.category,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                          Spacer(),
+                          SizedBox(width: 8),
                           Icon(Icons.star, color: Colors.amber, size: 16),
                           SizedBox(width: 4),
                           Text(
@@ -330,6 +440,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       SizedBox(height: 12),
                       Text(
                         course.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,

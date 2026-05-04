@@ -1,19 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/course_provider.dart';
 import 'screens/login_screen.dart';
+import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(MyApp());
+  
+  // Check common login state
+  final firebaseUser = FirebaseAuth.instance.currentUser;
+  
+  runApp(MyApp(isLoggedIn: firebaseUser != null));
 }
 
 class MyApp extends StatelessWidget {
+  final bool isLoggedIn;
+  MyApp({required this.isLoggedIn});
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -79,7 +89,7 @@ class MyApp extends StatelessWidget {
             labelStyle: GoogleFonts.inter(color: Color(0xFF64748B)),
           ),
         ),
-        home: LoginScreen(),
+        home: isLoggedIn ? HomeScreen() : LoginScreen(),
       ),
     );
   }

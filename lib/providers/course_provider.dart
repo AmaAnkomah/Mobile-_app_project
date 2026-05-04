@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
 import '../models/course.dart';
 
@@ -60,6 +61,21 @@ class CourseProvider extends ChangeNotifier {
     }
   }
 
+  Future<String?> uploadImage(XFile imageFile) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      return await _api.uploadImage(imageFile);
+    } catch (e) {
+      _error = e.toString();
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> seedData() async {
     _isLoading = true;
     _error = null;
@@ -67,6 +83,23 @@ class CourseProvider extends ChangeNotifier {
     try {
       await _api.seedDemoCourses();
       await _api.seedDemoQuizzes();
+      await fetchCourses();
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Wipes all existing courses & quizzes from Firestore, then re-seeds
+  /// fresh course-specific content (unique videos + unique quizzes per course).
+  Future<void> clearAndReseed() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await _api.clearAndReseed();
       await fetchCourses();
     } catch (e) {
       _error = e.toString();

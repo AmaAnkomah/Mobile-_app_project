@@ -171,11 +171,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
       child: TextField(
         controller: controller,
         obscureText: obscureText,
-        style: TextStyle(color: Colors.white),
+        style: const TextStyle(color: Colors.white),
+        cursorColor: const Color(0xFFD4AF37),
         decoration: InputDecoration(
+          filled: false,
           prefixIcon: Icon(icon, color: Color(0xFF64748B), size: 20),
           labelText: label,
-          labelStyle: TextStyle(
+          labelStyle: const TextStyle(
             color: Color(0xFF64748B),
             fontSize: 12,
             letterSpacing: 1.2,
@@ -183,7 +185,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         ),
       ),
     );
