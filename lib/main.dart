@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
@@ -22,7 +21,7 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final bool isLoggedIn;
-  MyApp({required this.isLoggedIn});
+  const MyApp({super.key, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
@@ -37,11 +36,10 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Color(0xFF6366F1), // Modern Indigo
-            primary: Color(0xFF6366F1),
-            secondary: Color(0xFF10B981), // Emerald
-            surface: Colors.white,
-            background: Color(0xFFF8FAFC),
+            seedColor: const Color(0xFF6366F1), // Modern Indigo
+            primary: const Color(0xFF6366F1),
+            secondary: const Color(0xFF10B981), // Emerald
+            surface: const Color(0xFFF8FAFC),
           ),
           textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme),
           appBarTheme: AppBarTheme(

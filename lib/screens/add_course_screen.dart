@@ -31,6 +31,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       );
       if (pickedFile != null) {
         final bytes = await pickedFile.readAsBytes();
+        if (!mounted) return;
         setState(() {
           _imageFile = pickedFile;
           _imageBytes = bytes;
@@ -38,6 +39,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error selecting image: $e')),
       );
@@ -69,7 +71,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               ),
               SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: category,
+                initialValue: category,
                 items: categories
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                     .toList(),
@@ -147,6 +149,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                             final downloadUrl =
                                 await courseProvider.uploadImage(_imageFile!);
 
+                            if (!mounted) return;
+
                             if (downloadUrl == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -170,6 +174,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                             final success = await courseProvider.addCourse(
                               courseData,
                             );
+
+                            if (!mounted) return;
 
                             if (success) {
                               ScaffoldMessenger.of(context).showSnackBar(

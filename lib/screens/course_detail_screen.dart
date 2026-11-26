@@ -14,7 +14,7 @@ import 'package:intl/intl.dart';
 class CourseDetailScreen extends StatefulWidget {
   final Course course;
 
-  CourseDetailScreen({required this.course});
+  const CourseDetailScreen({super.key, required this.course});
 
   @override
   _CourseDetailScreenState createState() => _CourseDetailScreenState();
@@ -253,7 +253,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         decoration: BoxDecoration(
                           color: Theme.of(
                             context,
-                          ).colorScheme.primary.withOpacity(0.1),
+                          ).colorScheme.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -271,7 +271,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
+                            color: Colors.green.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -458,7 +458,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -469,7 +469,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               ? Container(
                   height: 50,
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Row(
